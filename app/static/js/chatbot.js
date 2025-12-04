@@ -8,6 +8,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearHistoryBtn = document.getElementById('clear-history-btn');
     const refreshInsightsBtn = document.getElementById('refresh-insights-btn');
     
+    // Inicializar Mermaid
+    if (typeof mermaid !== 'undefined') {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+        // Renderizar diagramas existentes en el historial después de que el DOM esté listo
+        setTimeout(() => {
+            renderMermaidDiagrams();
+        }, 200);
+    }
+    
     // Auto-resize del textarea
     messageInput.addEventListener('input', function() {
         this.style.height = 'auto';
@@ -84,8 +102,8 @@ document.addEventListener('DOMContentLoaded', function() {
             typingIndicator.style.display = 'none';
             
             if (data.success) {
-                // Agregar respuesta del bot
-                addBotMessage(data.response, data.timestamp);
+                // Agregar respuesta del bot (usar HTML pre-renderizado del servidor)
+                addBotMessage(data.response_html || data.response, data.timestamp);
             } else {
                 // Mostrar error
                 addBotMessage('Lo siento, hubo un error: ' + data.error, new Date().toISOString());
@@ -122,45 +140,200 @@ document.addEventListener('DOMContentLoaded', function() {
         scrollToBottom();
     }
     
-    function addBotMessage(response, timestamp) {
+    function addBotMessage(responseHtml, timestamp) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message bot-message fade-in';
         
-        // Formatear el mensaje con markdown básico
-        const formattedResponse = formatMarkdown(response);
-        
+        // El servidor ya envía el HTML renderizado, lo usamos directamente
         messageDiv.innerHTML = `
             <div class='message-content'>
                 <div class='message-icon-wrapper bot-icon'>
                     <i class='fas fa-robot message-icon'></i>
                 </div>
                 <div class='message-bubble'>
-                    <div class='message-text markdown-content'>${formattedResponse}</div>
+                    <div class='message-text markdown-content'>${responseHtml}</div>
                     <div class='message-time'>${formatTime(new Date(timestamp))}</div>
                 </div>
             </div>
         `;
         chatMessages.appendChild(messageDiv);
         scrollToBottom();
+        
+        // Renderizar diagramas Mermaid si existen
+        renderMermaidDiagrams();
     }
     
+    // formatMarkdown ya no es necesario para mensajes nuevos,
+    // pero lo mantenemos por si se necesita para fallback o errores
     function formatMarkdown(text) {
-        // Escapar HTML primero
+        // Almacenar bloques de código Mermaid temporalmente
+        const mermaidBlocks = [];
+        const mermaidPlaceholder = '@@MERMAID_PLACEHOLDER@@';
+        
+        // Extraer bloques de código Mermaid
+        text = text.replace(/```mermaid\s*\n([\s\S]*?)```/gi, function(match, code) {
+            mermaidBlocks.push(code.trim());
+            return mermaidPlaceholder;
+        });
+        
+        // Almacenar otros bloques de código
+        const codeBlocks = [];
+        const codePlaceholder = '@@CODE_PLACEHOLDER@@';
+        
+        // Extraer bloques de código genéricos ```code```
+        text = text.replace(/```(\w*)\s*\n([\s\S]*?)```/g, function(match, lang, code) {
+            codeBlocks.push({ lang: lang, code: code.trim() });
+            return codePlaceholder;
+        });
+        
+        // Extraer código inline `code`
+        const inlineCode = [];
+        const inlinePlaceholder = '@@INLINE_CODE@@';
+        text = text.replace(/`([^`]+)`/g, function(match, code) {
+            inlineCode.push(code);
+            return inlinePlaceholder;
+        });
+        
+        // Extraer y procesar tablas Markdown ANTES de escapar HTML
+        const tables = [];
+        const tablePlaceholder = '@@TABLE_PLACEHOLDER@@';
+        text = text.replace(/(?:^|\n)((?:\|[^\n]+\|\n)+)/g, function(match, tableContent) {
+            const lines = tableContent.trim().split('\n');
+            if (lines.length < 2) return match;
+            
+            // Verificar si la segunda línea es separador (|---|---|)
+            const separatorLine = lines[1];
+            if (!/^\|[\s:-]+\|$/.test(separatorLine.replace(/\|/g, '|').replace(/[^|:-\s]/g, ''))) {
+                // No es una tabla válida, verificar de otra forma
+                if (!separatorLine.includes('---') && !separatorLine.includes(':--') && !separatorLine.includes('--:')) {
+                    return match;
+                }
+            }
+            
+            let tableHtml = '<table>';
+            
+            // Header row
+            const headerCells = lines[0].split('|').filter(cell => cell.trim() !== '');
+            tableHtml += '<thead><tr>';
+            headerCells.forEach(cell => {
+                tableHtml += `<th>${cell.trim()}</th>`;
+            });
+            tableHtml += '</tr></thead>';
+            
+            // Body rows (skip header and separator)
+            tableHtml += '<tbody>';
+            for (let i = 2; i < lines.length; i++) {
+                const cells = lines[i].split('|').filter(cell => cell.trim() !== '');
+                if (cells.length > 0) {
+                    tableHtml += '<tr>';
+                    cells.forEach(cell => {
+                        tableHtml += `<td>${cell.trim()}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                }
+            }
+            tableHtml += '</tbody></table>';
+            
+            tables.push(tableHtml);
+            return '\n' + tablePlaceholder + '\n';
+        });
+        
+        // Escapar HTML en el texto restante
         text = escapeHtml(text);
         
+        // Líneas horizontales ---
+        text = text.replace(/^---+$/gm, '<hr>');
+        
+        // Encabezados ### Título
+        text = text.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+        text = text.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+        text = text.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+        
         // Negritas **texto**
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         
         // Itálicas *texto*
-        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
         
-        // Convertir saltos de línea a <br>
+        // Listas con viñetas - y •
+        text = text.replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>');
+        text = text.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+        
+        // Listas numeradas
+        text = text.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+        
+        // Links [texto](url)
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        // Convertir saltos de línea a <br> (pero no dentro de listas)
         text = text.replace(/\n/g, '<br>');
         
-        // Emojis y viñetas
-        text = text.replace(/•/g, '•');
+        // Limpiar <br> extras alrededor de elementos de bloque
+        text = text.replace(/<br>(<h[234]>)/g, '$1');
+        text = text.replace(/(<\/h[234]>)<br>/g, '$1');
+        text = text.replace(/<br>(<ul>)/g, '$1');
+        text = text.replace(/(<\/ul>)<br>/g, '$1');
+        text = text.replace(/<br>(<li>)/g, '$1');
+        text = text.replace(/(<\/li>)<br>/g, '$1');
+        text = text.replace(/<br>(<hr>)/g, '$1');
+        text = text.replace(/(<hr>)<br>/g, '$1');
+        
+        // Restaurar código inline
+        inlineCode.forEach(code => {
+            text = text.replace(inlinePlaceholder, `<code class="inline-code">${escapeHtml(code)}</code>`);
+        });
+        
+        // Restaurar bloques de código
+        codeBlocks.forEach(block => {
+            const langClass = block.lang ? ` class="language-${block.lang}"` : '';
+            text = text.replace(codePlaceholder, `<pre><code${langClass}>${escapeHtml(block.code)}</code></pre>`);
+        });
+        
+        // Restaurar bloques Mermaid
+        mermaidBlocks.forEach(code => {
+            text = text.replace(mermaidPlaceholder, `<pre class="mermaid">${code}</pre>`);
+        });
+        
+        // Restaurar tablas
+        tables.forEach(tableHtml => {
+            text = text.replace(tablePlaceholder, tableHtml);
+        });
+        
+        // Limpiar <br> alrededor de tablas
+        text = text.replace(/<br>(<table>)/g, '$1');
+        text = text.replace(/(<\/table>)<br>/g, '$1');
         
         return text;
+    }
+    
+    function renderMermaidDiagrams() {
+        // Verificar si Mermaid está disponible
+        if (typeof mermaid !== 'undefined') {
+            try {
+                // Buscar elementos mermaid no procesados (que no tengan SVG dentro)
+                const mermaidElements = document.querySelectorAll('pre.mermaid');
+                mermaidElements.forEach((element, index) => {
+                    // Solo procesar si no tiene ya un SVG renderizado
+                    if (!element.querySelector('svg') && !element.hasAttribute('data-processed')) {
+                        element.setAttribute('data-processed', 'true');
+                        const graphId = `mermaid-graph-${Date.now()}-${index}`;
+                        const graphDefinition = element.textContent || element.innerText;
+                        
+                        // Usar mermaid.render para renderizar el diagrama
+                        mermaid.render(graphId, graphDefinition.trim())
+                            .then(({ svg }) => {
+                                element.innerHTML = svg;
+                            })
+                            .catch(err => {
+                                console.error('Error renderizando Mermaid:', err);
+                                element.innerHTML = `<div class="mermaid-error">Error al renderizar diagrama: ${err.message}</div>`;
+                            });
+                    }
+                });
+            } catch (e) {
+                console.error('Error en renderMermaidDiagrams:', e);
+            }
+        }
     }
     
     function clearHistory() {

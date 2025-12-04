@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from app.views.layout import Layout
+import markdown, re
 
 
 class ChatbotView:
@@ -13,9 +14,10 @@ class ChatbotView:
         history_html = ""
         if history:
             for msg in history:
-                # Mensaje del usuario
+                # Mensaje del usuario - escapar HTML para seguridad
                 user_msg = msg["message"].replace("<", "&lt;").replace(">", "&gt;")
-                bot_msg = msg["response"].replace("<", "&lt;").replace(">", "&gt;")
+                # Mensaje del bot - procesar con format_markdown (ya maneja el escape internamente)
+                bot_msg = msg["response"]
 
                 history_html += f"""
                 <div class='message user-message fade-in'>
@@ -498,17 +500,33 @@ class ChatbotView:
 
     @staticmethod
     def format_markdown(text):
-        """Formatea texto básico tipo markdown para HTML"""
-        import re
+        """
+        Formatea texto Markdown a HTML, preservando bloques de código Mermaid.
+        """
+        # 1. Patrón para bloques de código Mermaid
+        # Busca ```mermaid...``` y los reemplaza temporalmente con un marcador
+        mermaid_blocks = re.findall(r"```mermaid\s*\n(.*?)\n```", text, re.DOTALL)
 
-        # Negritas con **
-        text = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", text)
+        # Marcador para reintroducir los bloques de código después del renderizado Markdown
+        MERMAID_PLACEHOLDER = "@@MERMAID_BLOCK_PLACEHOLDER@@"
 
-        # Itálicas con *
-        text = re.sub(r"\*(.*?)\*", r"<em>\1</em>", text)
+        # Reemplazar los bloques de mermaid en el texto original con el marcador
+        text_with_placeholders = re.sub(
+            r"```mermaid\s*\n(.*?)\n```", MERMAID_PLACEHOLDER, text, flags=re.DOTALL
+        )
 
-        # Convertir saltos de línea
-        text = text.replace("\n", "<br>")
+        # 2. Convertir el texto con la librería Python-Markdown
+        # Usamos 'extra' y 'fenced_code' para un soporte de Markdown más rico, incluyendo tablas.
+        html_output = markdown.markdown(
+            text_with_placeholders, extensions=["extra", "codehilite", "fenced_code"]
+        )
 
-        # Mantener emojis y caracteres especiales
-        return text
+        # 3. Reinsertar los bloques de código Mermaid con la estructura <pre class="mermaid">...</pre>
+        # Esto es lo que el frontend necesita para renderizar el diagrama.
+        for block in mermaid_blocks:
+            mermaid_html = f'<pre class="mermaid">\n{block.strip()}\n</pre>'
+            # Solo reemplazamos UNA vez, para manejar múltiples bloques si existen
+            html_output = html_output.replace(MERMAID_PLACEHOLDER, mermaid_html, 1)
+
+        # Retornar el HTML final
+        return html_output

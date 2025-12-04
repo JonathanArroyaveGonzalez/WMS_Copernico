@@ -448,6 +448,7 @@
         flex-shrink: 0;
     }
     
+    
     .page-header {
         flex-direction: column;
         gap: 10px;
@@ -485,4 +486,153 @@
 
 .scroll-to-bottom.visible {
     display: flex;
+}
+
+/* ========== MARKDOWN STYLES ========== */
+
+/* Código inline */
+.inline-code {
+    background: #f1f3f5;
+    color: #e83e8c;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+/* Bloques de código */
+.message-bubble pre {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.message-bubble pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+}
+
+/* Mermaid Diagrams */
+.message-bubble pre.mermaid {
+    background: white;
+    color: #333;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.message-bubble .mermaid svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Encabezados en mensajes */
+.message-bubble h2,
+.message-bubble h3,
+.message-bubble h4 {
+    margin: 16px 0 8px 0;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.message-bubble h2 {
+    font-size: 1.3em;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 6px;
+}
+
+.message-bubble h3 {
+    font-size: 1.15em;
+}
+
+.message-bubble h4 {
+    font-size: 1.05em;
+}
+
+/* Listas en mensajes */
+.message-bubble ul,
+.message-bubble ol {
+    margin: 10px 0;
+    padding-left: 24px;
+}
+
+.message-bubble li {
+    margin: 6px 0;
+    line-height: 1.5;
+}
+
+/* Links */
+.message-bubble a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.message-bubble a:hover {
+    text-decoration: underline;
+}
+
+/* Tablas generadas por Markdown */
+.message-bubble table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.9em;
+}
+
+.message-bubble th,
+.message-bubble td {
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    text-align: left;
+}
+
+.message-bubble th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.message-bubble tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+/* Strong y emphasis */
+.message-bubble strong {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.message-bubble em {
+    font-style: italic;
+}
+
+/* Error de Mermaid */
+.mermaid-error {
+    background: #fff5f5;
+    border: 1px solid #fc8181;
+    color: #c53030;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+/* Mermaid SVG contenido */
+.message-bubble pre.mermaid {
+    background: #fafafa;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.message-bubble pre.mermaid svg {
+    max-width: 100%;
+    height: auto;
 }

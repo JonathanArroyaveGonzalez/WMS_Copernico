@@ -1,0 +1,207 @@
+/* ===================================
+   ESTILOS PARA GRÁFICAS DEL DASHBOARD
+   =================================== */
+
+/* Grid de gráficas */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+/* Responsive: una columna en móviles */
+@media (max-width: 992px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Tarjeta de gráfica */
+.chart-card {
+    background: linear-gradient(145deg, #1e1e2e, #252538);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Header de la gráfica */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chart-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-header h3 i {
+    color: #8b5cf6;
+    font-size: 1rem;
+}
+
+/* Contenedor de la gráfica */
+.chart-container {
+    width: 100%;
+    height: 300px;
+    min-height: 280px;
+}
+
+/* Mensaje cuando no hay datos */
+.chart-no-data {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #6b7280;
+    text-align: center;
+}
+
+.chart-no-data i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.chart-no-data p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Colores personalizados para gráficas */
+:root {
+    --chart-purple: #8b5cf6;
+    --chart-pink: #ec4899;
+    --chart-blue: #3b82f6;
+    --chart-cyan: #06b6d4;
+    --chart-green: #10b981;
+    --chart-yellow: #f59e0b;
+    --chart-red: #ef4444;
+    --chart-orange: #f97316;
+    --chart-indigo: #6366f1;
+    --chart-teal: #14b8a6;
+}
+
+/* Loading spinner para gráficas */
+.chart-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.chart-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(139, 92, 246, 0.3);
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: chart-spin 1s linear infinite;
+}
+
+@keyframes chart-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tooltip personalizado (si se usa custom tooltip) */
+.chart-tooltip {
+    background: rgba(30, 30, 46, 0.95) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Gráfica de barras especial */
+.chart-card.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Ajustes para gráficas en móvil */
+@media (max-width: 576px) {
+    .chart-container {
+        height: 250px;
+        min-height: 220px;
+    }
+    
+    .chart-card {
+        padding: 15px;
+    }
+    
+    .chart-header h3 {
+        font-size: 1rem;
+    }
+}
+
+/* Animación de entrada */
+.chart-card {
+    animation: chartFadeIn 0.5s ease forwards;
+    opacity: 0;
+}
+
+.chart-card:nth-child(1) { animation-delay: 0.1s; }
+.chart-card:nth-child(2) { animation-delay: 0.2s; }
+.chart-card:nth-child(3) { animation-delay: 0.3s; }
+.chart-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes chartFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilos para leyendas */
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.chart-legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+/* Hover effects en elementos de leyenda */
+.chart-legend-item:hover {
+    color: #e0e0e0;
+}

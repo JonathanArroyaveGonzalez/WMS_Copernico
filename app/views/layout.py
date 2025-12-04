@@ -10,8 +10,10 @@ class Layout:
         <link rel="stylesheet" href="/static/css/forms.css">
         <link rel="stylesheet" href="/static/css/dashboard.css">
         <link rel="stylesheet" href="/static/css/swal.css">
-        <link rel="stylesheet" href="/static/css/chatbot.css">
+        <link rel="stylesheet" href="/static/css/chatbot.css?v=4">
+        <link rel="stylesheet" href="/static/css/charts.css">
         <script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10.8.0/dist/mermaid.min.js"></script>
         """
 
     @staticmethod
@@ -104,7 +106,7 @@ class Layout:
         chatbot_script = ""
         if active_page == "chatbot":
             # Cache-busting: forzar recarga del JS
-            chatbot_script = '<script src="/static/js/chatbot.js?v=3"></script>'
+            chatbot_script = '<script src="/static/js/chatbot.js?v=9"></script>'
         return f"""
         <!DOCTYPE html>
         <html lang="es">
@@ -130,6 +132,43 @@ class Layout:
             </script>
             <script src="/static/js/protection.js"></script>
             {chatbot_script}
+        </body>
+        </html>
+        """
+
+    @staticmethod
+    def render_with_charts(title, user, active_page, content):
+        """Renderiza el layout con soporte para gráficas ECharts"""
+        styles = Layout.get_styles()
+        navbar = Layout.navbar(user)
+        sidebar = Layout.sidebar(active_page)
+
+        return f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{title} - Sistema de Inventario</title>
+            {styles}
+            <!-- ECharts Library -->
+            <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+        </head>
+        <body>
+            {navbar}
+            <div class="layout">
+                {sidebar}
+                <div class="main-content">
+                    {content}
+                </div>
+            </div>
+            <script src="/static/js/main.js"></script>
+            <script>
+                // Pasar estado del usuario al JavaScript
+                window.userActive = {("true" if user.get("activo", 1) == 1 else "false")};
+            </script>
+            <script src="/static/js/protection.js"></script>
+            <script src="/static/js/charts.js"></script>
         </body>
         </html>
         """

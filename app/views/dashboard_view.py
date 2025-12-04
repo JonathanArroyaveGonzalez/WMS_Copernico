@@ -1,13 +1,26 @@
 from django.http import HttpResponse
 from app.views.layout import Layout
+import json
+
 
 class DashboardView:
     """Vista del Dashboard"""
-    
+
     @staticmethod
-    def index(user, request_path, stats, productos_bajo_stock, ultimas_ventas, ultimas_compras):
-        """Vista principal del dashboard mejorada"""
-        
+    def index(
+        user,
+        request_path,
+        stats,
+        productos_bajo_stock,
+        ultimas_ventas,
+        ultimas_compras,
+        chart_data=None,
+    ):
+        """Vista principal del dashboard mejorada con gráficas"""
+
+        # Datos de gráficas para JavaScript
+        chart_data_json = json.dumps(chart_data if chart_data else {})
+
         # Tarjetas de estadísticas principales
         main_stats = f"""
         <div class="stats-primary-grid">
@@ -15,7 +28,7 @@ class DashboardView:
                 <div class="stat-card-content">
                     <div class="stat-card-info">
                         <p>Productos</p>
-                        <h2>{stats['total_productos']}</h2>
+                        <h2>{stats["total_productos"]}</h2>
                     </div>
                     <div class="stat-card-icon"><i class="fas fa-box"></i></div>
                 </div>
@@ -25,7 +38,7 @@ class DashboardView:
                 <div class="stat-card-content">
                     <div class="stat-card-info">
                         <p>Ventas del Mes</p>
-                        <h2>${stats['ventas_mes']:,.2f}</h2>
+                        <h2>${stats["ventas_mes"]:,.2f}</h2>
                     </div>
                     <div class="stat-card-icon"><i class="fas fa-dollar-sign"></i></div>
                 </div>
@@ -35,7 +48,7 @@ class DashboardView:
                 <div class="stat-card-content">
                     <div class="stat-card-info">
                         <p>Compras del Mes</p>
-                        <h2>${stats['compras_mes']:,.2f}</h2>
+                        <h2>${stats["compras_mes"]:,.2f}</h2>
                     </div>
                     <div class="stat-card-icon"><i class="fas fa-shopping-cart"></i></div>
                 </div>
@@ -45,65 +58,67 @@ class DashboardView:
                 <div class="stat-card-content">
                     <div class="stat-card-info">
                         <p>Clientes</p>
-                        <h2>{stats['total_clientes']}</h2>
+                        <h2>{stats["total_clientes"]}</h2>
                     </div>
                     <div class="stat-card-icon"><i class="fas fa-users"></i></div>
                 </div>
             </div>
         </div>
         """
-        
+
         # Tarjetas de estadísticas secundarias
         secondary_stats = f"""
         <div class="stats-secondary-grid">
             <div class="stat-card-secondary border-purple">
                 <p>Categorías</p>
-                <h3>{stats['total_categorias']}</h3>
+                <h3>{stats["total_categorias"]}</h3>
             </div>
             
             <div class="stat-card-secondary border-pink">
                 <p>Proveedores</p>
-                <h3>{stats['total_proveedores']}</h3>
+                <h3>{stats["total_proveedores"]}</h3>
             </div>
             
             <div class="stat-card-secondary border-blue">
                 <p>Almacenes</p>
-                <h3>{stats['total_almacenes']}</h3>
+                <h3>{stats["total_almacenes"]}</h3>
             </div>
             
             <div class="stat-card-secondary border-green">
                 <p>Total Ventas</p>
-                <h3>{stats['total_ventas']}</h3>
+                <h3>{stats["total_ventas"]}</h3>
             </div>
             
             <div class="stat-card-secondary border-orange">
                 <p>Total Compras</p>
-                <h3>{stats['total_compras']}</h3>
+                <h3>{stats["total_compras"]}</h3>
             </div>
             
             <div class="stat-card-secondary border-cyan">
                 <p>Movimientos Inventario</p>
-                <h3>{stats['total_movimientos']}</h3>
+                <h3>{stats["total_movimientos"]}</h3>
             </div>
         </div>
         """
-        
+
         # Productos con stock bajo
         stock_rows = ""
         if productos_bajo_stock:
             for producto in productos_bajo_stock:
-                badge_class = "stock-danger" if producto['stock_actual'] < 5 else "stock-warning"
+                badge_class = (
+                    "stock-danger" if producto["stock_actual"] < 5 else "stock-warning"
+                )
                 stock_rows += f"""
                 <tr>
-                    <td>{producto['nombre']}</td>
-                    <td>{producto.get('categoria', 'N/A')}</td>
+                    <td>{producto["nombre"]}</td>
+                    <td>{producto.get("categoria", "N/A")}</td>
                     <td>
                         <span class="stock-badge {badge_class}">
-                            {producto['stock_actual']} unidades
+                            {producto["stock_actual"]} unidades
                         </span>
                     </td>
                     <td>
-                        <a href="/productos/{producto['id']}/editar/" class="btn btn-info btn-sm">
+                        <a href="/productos/{producto["id"]}/editar/" class="btn btn-info btn-sm">
                             Ver Producto
                         </a>
                     </td>
@@ -111,7 +126,7 @@ class DashboardView:
                 """
         else:
             stock_rows = '<tr><td colspan="4" class="empty-message"><i class="fas fa-check-circle"></i> Todos los productos tienen stock suficiente</td></tr>'
-        
+
         productos_stock_section = f"""
         <div class="card mb-30">
             <div class="card-header">
@@ -135,26 +150,28 @@ class DashboardView:
             </div>
         </div>
         """
-        
+
         # Últimas ventas
         ventas_rows = ""
         if ultimas_ventas:
             for venta in ultimas_ventas:
                 estado_badge = {
-                    'pendiente': '<span class="badge badge-warning">Pendiente</span>',
-                    'completada': '<span class="badge badge-success">Completada</span>',
-                    'cancelada': '<span class="badge badge-danger">Cancelada</span>'
-                }.get(venta.get('estado', 'pendiente'), venta.get('estado', 'pendiente'))
-                
+                    "pendiente": '<span class="badge badge-warning">Pendiente</span>',
+                    "completada": '<span class="badge badge-success">Completada</span>',
+                    "cancelada": '<span class="badge badge-danger">Cancelada</span>',
+                }.get(
+                    venta.get("estado", "pendiente"), venta.get("estado", "pendiente")
+                )
+
                 ventas_rows += f"""
                 <tr>
-                    <td>#{venta['id']}</td>
-                    <td>{venta.get('cliente_nombre', 'N/A')}</td>
-                    <td>${venta['total']:,.2f}</td>
+                    <td>#{venta["id"]}</td>
+                    <td>{venta.get("cliente_nombre", "N/A")}</td>
+                    <td>${venta["total"]:,.2f}</td>
                     <td>{estado_badge}</td>
-                    <td>{venta['fecha']}</td>
+                    <td>{venta["fecha"]}</td>
                     <td>
-                        <a href="/ventas/{venta['id']}/ver/" class="btn btn-info btn-sm">
+                        <a href="/ventas/{venta["id"]}/ver/" class="btn btn-info btn-sm">
                             Ver
                         </a>
                     </td>
@@ -162,7 +179,7 @@ class DashboardView:
                 """
         else:
             ventas_rows = '<tr><td colspan="6" class="empty-message"><i class="fas fa-chart-line"></i> No hay ventas registradas</td></tr>'
-        
+
         ultimas_ventas_section = f"""
         <div class="card mb-30">
             <div class="card-header">
@@ -188,26 +205,28 @@ class DashboardView:
             </div>
         </div>
         """
-        
+
         # Últimas compras
         compras_rows = ""
         if ultimas_compras:
             for compra in ultimas_compras:
                 estado_badge = {
-                    'pendiente': '<span class="badge badge-warning">Pendiente</span>',
-                    'recibida': '<span class="badge badge-success">Recibida</span>',
-                    'cancelada': '<span class="badge badge-danger">Cancelada</span>'
-                }.get(compra.get('estado', 'pendiente'), compra.get('estado', 'pendiente'))
-                
+                    "pendiente": '<span class="badge badge-warning">Pendiente</span>',
+                    "recibida": '<span class="badge badge-success">Recibida</span>',
+                    "cancelada": '<span class="badge badge-danger">Cancelada</span>',
+                }.get(
+                    compra.get("estado", "pendiente"), compra.get("estado", "pendiente")
+                )
+
                 compras_rows += f"""
                 <tr>
-                    <td>#{compra['id']}</td>
-                    <td>{compra.get('proveedor_nombre', 'N/A')}</td>
-                    <td>${compra['total']:,.2f}</td>
+                    <td>#{compra["id"]}</td>
+                    <td>{compra.get("proveedor_nombre", "N/A")}</td>
+                    <td>${compra["total"]:,.2f}</td>
                     <td>{estado_badge}</td>
-                    <td>{compra['fecha']}</td>
+                    <td>{compra["fecha"]}</td>
                     <td>
-                        <a href="/compras/{compra['id']}/ver/" class="btn btn-info btn-sm">
+                        <a href="/compras/{compra["id"]}/ver/" class="btn btn-info btn-sm">
                             Ver
                         </a>
                     </td>
@@ -215,7 +234,7 @@ class DashboardView:
                 """
         else:
             compras_rows = '<tr><td colspan="6" class="empty-message"><i class="fas fa-shopping-cart"></i> No hay compras registradas</td></tr>'
-        
+
         ultimas_compras_section = f"""
         <div class="card">
             <div class="card-header">
@@ -241,15 +260,71 @@ class DashboardView:
             </div>
         </div>
         """
-        
+
         # Bienvenida personalizada
         welcome_card = f"""
         <div class="welcome-banner">
-            <h1>Bienvenido, {user['nombre_completo']}</h1>
-            <p>Rol: {user['rol']} | Dashboard del Sistema de Inventario</p>
+            <h1>Bienvenido, {user["nombre_completo"]}</h1>
+            <p>Rol: {user["rol"]} | Dashboard del Sistema de Inventario</p>
         </div>
         """
+
+        # Sección de gráficas - usar comillas simples para evitar conflictos
+        charts_section = (
+            """
+        <div class="charts-grid">
+            <!-- Gráfica de Ventas por Mes -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Ventas por Mes</h3>
+                </div>
+                <div class="chart-container" id="ventas-mes-chart"></div>
+            </div>
+            
+            <!-- Gráfica de Productos por Categoría -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Productos por Categoría</h3>
+                </div>
+                <div class="chart-container" id="productos-categoria-chart"></div>
+            </div>
+            
+            <!-- Gráfica de Top Productos -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-trophy"></i> Top 5 Productos Vendidos</h3>
+                </div>
+                <div class="chart-container" id="top-productos-chart"></div>
+            </div>
+            
+            <!-- Gráfica de Stock por Categoría -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-boxes"></i> Stock por Categoría</h3>
+                </div>
+                <div class="chart-container" id="stock-categoria-chart"></div>
+            </div>
+        </div>
         
-        content = welcome_card + main_stats + secondary_stats + productos_stock_section + ultimas_ventas_section + ultimas_compras_section
-        
-        return HttpResponse(Layout.render('Dashboard', user, 'dashboard', content))
+        <!-- Script para inicializar gráficas -->
+        <script>
+            window.chartData = """
+            + chart_data_json
+            + """;
+        </script>
+        """
+        )
+
+        content = (
+            welcome_card
+            + main_stats
+            + secondary_stats
+            + charts_section
+            + productos_stock_section
+            + ultimas_ventas_section
+            + ultimas_compras_section
+        )
+
+        return HttpResponse(
+            Layout.render_with_charts("Dashboard", user, "dashboard", content)
+        )

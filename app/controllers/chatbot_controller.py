@@ -107,11 +107,15 @@ class ChatbotController:
             # Guardar mensaje y respuesta en la base de datos
             ChatbotMessage.save(user_id, user_message, response)
 
+            # Renderizar el Markdown a HTML usando la misma función que el historial
+            response_html = ChatbotView.format_markdown(response)
+
             return JsonResponse(
                 {
                     "success": True,
                     "message": user_message,
                     "response": response,
+                    "response_html": response_html,  # HTML ya renderizado
                     "timestamp": ChatbotMessage.get_current_timestamp(),
                 }
             )

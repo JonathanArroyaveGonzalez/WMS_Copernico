@@ -57,7 +57,8 @@ RUN pip install --no-cache-dir \
     mysqlclient==2.2.1 \
     python-dotenv==1.0.0 \
     django-cors-headers==4.3.1 \
-    google-generativeai>=0.3.0
+    google-generativeai>=0.3.0 \
+    markdown
 
 ## ---------------------------------------------------------
 ## Configurar directorio de trabajo

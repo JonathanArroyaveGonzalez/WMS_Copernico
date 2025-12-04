@@ -22,6 +22,11 @@ from app.controllers.chatbot_controller import ChatbotController
 
 urlpatterns = [
     path("", DashboardController.index, name="dashboard"),
+    path(
+        "api/dashboard/charts/",
+        DashboardController.api_chart_data,
+        name="api_chart_data",
+    ),
     path("login/", AuthController.login, name="login"),
     path("register/", AuthController.register, name="register"),
     path("logout/", AuthController.logout, name="logout"),
